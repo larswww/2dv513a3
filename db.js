@@ -1,86 +1,69 @@
 "use strict";
 
-let sqlite = require("sqlite3");
-let db = new sqlite.Database("db/firsTry.db");
-sqlite.verbose();
+let sqlite = require("sqlite3").verbose();
+let db;
 
 let createDb = function(){
 
-    db.on("open", () => {
+    return new Promise(function (resolve, reject) {
+        db = new sqlite.Database("db/firsTry.db");
+        db.on("open", () => {
 
-        console.log("db open");
+            console.log("database connection open. \n Creating db tables...");
 
-        try {
-           // let pragmaRel = db.prepare("PRAGMA foreign_keys = ON");
+            try {
+                // let pragmaRel = db.prepare("PRAGMA foreign_keys = ON");
 
-           // let hskRelation = db.prepare("CREATE TABLE HSK (word NVARCHAR PRIMARY KEY NOT NULL UNIQUE, level INT NOT NULL)");
-            let cedictRelation = db.prepare("CREATE TABLE definitions (word NVARCHAR PRIMARY KEY NOT NULL UNIQUE, pinyin VARCHAR(10), definition TEXT");
-            //let characterRelation = db.prepare("CREATE TABLE characters (character NVARCHAR(1) PRIMARY KEY NOT NULL UNIQUE, word NVARCHAR(25) NOT NULL UNIQUE");
-            //let frequencyRelation = db.prepare("CREATE TABLE subtlex (word NVARCHAR, length INT, WCount INT, WMillion INT, logTenW INT, logTenCD INT, WCD INT, WCDp INT, dominantPoS VARCHAR(2), dPoSFreq INT, allPoS TEXT, allPoSFreq TEXT)");
+                let hskRelation = db.prepare("CREATE TABLE HSK (word NVARCHAR PRIMARY KEY NOT NULL, level INT NOT NULL)");
+                let cedictRelation = db.prepare("CREATE TABLE cedict (word NVARCHAR NOT NULL, pinyin VARCHAR(10), definition TEXT NOT NULL)");
+                let frequencyRelation = db.prepare("CREATE TABLE subtlex (word NVARCHAR, length INT, WCount INT, WMillion INT, logTenW INT, logTenCD INT, WCD INT, WCDp INT, dominantPoS VARCHAR(2), dPoSFreq INT, allPoS TEXT, allPoSFreq TEXT)");
 
+                cedictRelation.run();
+                hskRelation.run();
+                frequencyRelation.run();
+                console.log('SQL Tables created. \n Ready to input data..')
+                resolve();
 
-            //Word	Length	Pinyin	Pinyin.Input	WCount	W.million	log10W	W-CD	W-CD%	log10CD	Dominant.PoS	Dominant.PoS.Freq	All.PoS	All.PoS.Freq	Eng.Tran.
+            } catch (e) {
+                console.error('Error whilst creating database:', e);
+                console.log('Make sure you have a "db" directory in root, that the db file doesnt exist already. If second run delete the previous db or rename it')
+                reject();
+            }
+        });
 
-            // let subredditRelation = db.prepare("CREATE TABLE Subreddit (subreddit_id VARCHAR(8) PRIMARY KEY NOT NULL, subreddit VARCHAR(24) NOT NULL UNIQUE)");
-            // let postRelation = db.prepare("CREATE TABLE Post (id VARCHAR(7) PRIMARY KEY NOT NULL, name TEXT NOT NULL UNIQUE, parent_id VARCHAR(10) NOT NULL, link_id VARCHAR(9) NOT NULL, author TEXT NOT NULL, body TEXT NOT NULL, subreddit_id VARCHAR(8) NOT NULL, score INT NOT NULL, created_UTC INT NOT NULL, FOREIGN KEY(subreddit_id) REFERENCES Subreddit(subreddit_id), CHECK(link_id LIKE 't3_%'))");
-            //
-            // let subredditRelation = db.prepare("CREATE TABLE Subreddit (subreddit_id VARCHAR, subreddit TEXT)");
-            // let postRelation = db.prepare("CREATE TABLE Post (id VARCHAR, name TEXT, parent_id VARCHAR, link_id VARCHAR, author TEXT, body TEXT, subreddit_id VARCHAR, score INT, created_UTC INT, FOREIGN KEY (subreddit_id) REFERENCES Subreddit(subreddit_id))");
-            //
-            //
-            //pragmaRel.run();
-
-            cedictRelation.run();
-
-        } catch (e) {
-            console.error(e);
-
-        }
     });
-
 };
 
-createDb();
+let addCEDICT = function (cedictTuplesArray) {
+    let sql = "INSERT INTO cedict (word, pinyin, definition) VALUES (?, ?, ?)";
+    transactAndCommitToDb(cedictTuplesArray, sql);
+};
 
 
-let addFrequencyRelationFrom = function (subtlexTuplesArray) {
-
-    db.serialize(function () {
-
-        try {
-
-            db.run("BEGIN TRANSACTION");
-            let frequencyRelation = db.prepare("INSERT INTO subtlex (word, length, WCount, WMillion, logTenW, logTenCD, WCD, WCDp, dominantPoS, dPoSFreq, allPoS, allPoSFreq) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            subtlexTuplesArray.forEach(tuple => {
-                frequencyRelation.run(tuple);
-            });
-
-            db.run("COMMIT");
-
-        } catch (e) {
-            console.error(e)
-        }
-    });
+let addSubtlex = function (subtlexTuplesArray) {
+    let sql = "INSERT INTO subtlex (word, length, WCount, WMillion, logTenW, logTenCD, WCD, WCDp, dominantPoS, dPoSFreq, allPoS, allPoSFreq) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    transactAndCommitToDb(subtlexTuplesArray, sql);
 };
 
 let addHSK = function (tuplesArray) {
+    let sql = "INSERT INTO HSK (word, level) VALUES (?, ?)";
+    transactAndCommitToDb(tuplesArray, sql);
+};
+
+let transactAndCommitToDb = function (tuplesArray, sql) {
 
     db.serialize(function () {
 
         try {
-
             db.run("BEGIN TRANSACTION");
-            let hskRelation = db.prepare("INSERT INTO HSK (word, level) VALUES (?, ?)");
+            let relation = db.prepare(sql);
 
             tuplesArray.forEach(tuple => {
-                hskRelation.run(tuple, function (err, res) {
+                relation.run(tuple, function (err) {
                     if (err){
                         console.log(tuple);
                         console.error(err);
                     }
-
-
                 });
             });
 
@@ -95,7 +78,7 @@ let addHSK = function (tuplesArray) {
 
 module.exports = {
     create: createDb,
-    subtlex: addFrequencyRelationFrom,
+    subtlex: addSubtlex,
     HSK: addHSK,
-    db: db
+    cedict: addCEDICT
 };
