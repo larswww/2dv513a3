@@ -17,6 +17,26 @@ module.exports = {
     hsk: function (param) {
         let sql = "SELECT * FROM HSK WHERE word = '" + param + "'";
         queryAndSendToView(view.HSKresult, sql);
+    },
+
+    wordHSK: function (param) {
+        let sql = "SELECT cedict.word, cedict.definition, HSK.level FROM cedict INNER JOIN HSK ON cedict.word=HSK.word WHERE cedict.word = '" + param + "' ORDER BY HSK.level";
+        queryAndSendToView(view.cedictHSKResult, sql);
+    },
+
+    englishFreqResult: function (param) {
+        let sql = "SELECT * FROM cedict INNER JOIN subtlex ON cedict.word=subtlex.word WHERE cedict.definition LIKE '%"+ param + "%' ORDER BY subtlex.WMillion DESC;";
+        queryAndSendToView(view.englishFreqResult, sql)
+    },
+
+    containingResult: function (param) {
+        let sql = "SELECT * FROM cedict WHERE word LIKE '%" + param + "%'";
+        queryAndSendToView(view.containingResult, sql)
+    },
+
+    englishInHSK: function (param) {
+        let sql = "SELECT * FROM cedict INNER JOIN HSK ON cedict.word=HSK.word WHERE cedict.definition LIKE '%" + param + "%'";
+        queryAndSendToView(view.englishHSKResult, sql);
     }
 };
 
@@ -37,9 +57,9 @@ let queryAndSendToView = function (viewToUseFor, sql) {
     runSqlQuery(sql).then(result => {
 
         result.forEach(res => {
-            viewToUseFor(res)
+            viewToUseFor(null, res)
         });
     }).catch(e => {
-        view.errorHandle(e);
+        viewToUseFor(e, null);
     })
 };

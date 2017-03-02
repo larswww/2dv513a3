@@ -38,7 +38,6 @@ let handleAnswer = function (input) {
         view.searchChar();
         readConsole().then(input => {
             queries.word(input);
-
         })
 
     } else if (input === 'Get HSK level for Word') {
@@ -47,6 +46,30 @@ let handleAnswer = function (input) {
             queries.hsk(input);
         })
 
+    } else if (input === 'Get definition and HSK Level') {
+        view.searchChar();
+        readConsole().then(input => {
+            queries.wordHSK(input);
+        })
+
+    } else if (input === 'Input English word, get Chinese words ordered by Frequency') {
+        view.searchEnglish();
+        readConsole().then(input => {
+            queries.englishFreqResult(input);
+        })
+
+    } else if (input === 'Get words containing character') {
+        view.searchContaining();
+        readConsole().then(input => {
+            queries.containingResult(input);
+        })
+
+    } else if (input === 'Search for English words within HSK 1-6') {
+        view.searchEnglishHSK();
+        readConsole().then(input => {
+            "use strict";
+            queries.englishInHSK(input);
+        })
     }
 };
 
