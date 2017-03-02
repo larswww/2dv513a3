@@ -80,5 +80,6 @@ module.exports = {
     create: createDb,
     subtlex: addSubtlex,
     HSK: addHSK,
-    cedict: addCEDICT
+    cedict: addCEDICT,
+    db: db
 };

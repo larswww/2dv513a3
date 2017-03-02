@@ -1,52 +1,71 @@
-let view = require('./view');
+const view = require('./view');
 let db = require('./db');
+let queries = require('./queries');
+
 let loadCEDICT = require('./lib/loadCEDICT');
 let loadHSK = require('./lib/loadHSK');
 let loadSubtlex = require('./lib/loadSubtlex');
-let readline = require('readline');
+
+const readline = require('readline');
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
-let interfaceController = function (view) {
-
-    console.log(view);
+let interfaceController = function () {
 
     process.stdin.on('keypress', (str, key) => {
 
         if (key.ctrl && key.name === 'c') {
             process.exit();
+        } else if (key.name === '1') {
+            view.listKeys();
+        } if (view.keymap.has(str)) {
+            handleAnswer(view.keymap.get(str));
         }
 
-        console.log(key);
-       handleAnswer(key.name);
     });
-
 };
 
 let handleAnswer = function (input) {
 
-    let menu;
+    if (input === 'Load Database') {
+        db.create().then(() => {
+            loadCEDICT();
+            loadHSK();
+            loadSubtlex();
+        });
 
-    switch (input) {
-        case '1':
-            console.log('hit 1');
-            db.create().then(() => {
-                loadCEDICT();
-                loadHSK();
-                loadSubtlex();
-            });
-            // call build script
-            break;
-        case '2':
-            // give query menu
-            break;
-        case '3':
-            // query 1...
-        default:
-            menu = view.greeting;
+    } else if (input === 'Search for Word') {
+        view.searchChar();
+        readConsole().then(input => {
+            queries.word(input);
+
+        })
+
+    } else if (input === 'Get HSK level for Word') {
+        view.searchHSK();
+        readConsole().then(input => {
+            queries.hsk(input);
+        })
+
     }
-
 };
 
+let readConsole = function () {
+
+    return new Promise(function (resolve, reject) {
+
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        rl.question('', (answer) => {
+            // TODO: Log the answer in a database
+            rl.close();
+            resolve(answer);
+        });
+    });
+
+};
 
 module.exports = interfaceController;
