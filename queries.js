@@ -35,7 +35,7 @@ module.exports = {
     },
 
     englishInHSK: function (param) {
-        let sql = "SELECT * FROM cedict INNER JOIN HSK ON cedict.word=HSK.word WHERE cedict.definition LIKE '%" + param + "%'";
+        let sql = "SELECT * FROM cedict INNER JOIN HSK ON cedict.word=HSK.word WHERE cedict.definition LIKE '%" + param + "%' ORDER BY HSK.level";
         queryAndSendToView(view.englishHSKResult, sql);
     }
 };
